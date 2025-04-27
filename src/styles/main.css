@@ -153,28 +153,32 @@ button.active {
 
 /* סרגל הכלים העליון */
 .toolbar {
+  display: flex; /* לשים הכל בשורה */
+  flex-wrap: nowrap; /* לא לשבור שורה */
+  justify-content: center; /* למרכז */
+  align-items: center; /* לאמצע לגובה */
+  gap: 10px; /* רווחים בין הכפתורים */
   background-color: #ffffff;
   padding: 10px;
   border-radius: 10px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  position: relative;
-  z-index: 10;
 }
 
+
 /* סגנון כפתורים ב-toolbar */
-.toolbar button {
-  background-color: #f8f9fc;
+.toolbar button, 
+.toolbar select, 
+.toolbar input[type="color"] {
+  height: 40px;
+  min-width: 40px;
+  padding: 0 10px;
   border: 1px solid #ccd4e0;
-  font-size: 14px;
-  padding: 8px 10px;
   border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 36px;
-  min-width: 36px;
-  transition: background-color 0.3s ease;
+  background: #f8f9fc;
+  font-size: 16px;
+  cursor: pointer;
 }
+
 
 .toolbar button:hover {
   background-color: #e2e8f0;
@@ -231,3 +235,5 @@ button:active {
 .extra-controls button:hover {
   background-color: #e2e8f0;
 }
+
+    

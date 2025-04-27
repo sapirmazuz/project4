@@ -3,51 +3,52 @@ import VirtualKeyboard from "./VirtualKeyboard";
 import { useTexts } from "../contexts/TextsContext";
 
 export default function Editor() {
-  const { texts, activeId, updateText } = useTexts();
+  const { texts, activeId, updateText, addText, setActiveId, removeText } = useTexts();
   const active = texts.find((t) => t.id === activeId);
   const displayRef = useRef(null);
-  const [text, setText] = useState(active?.content || "");
+  const [text, setText] = useState("");
   const [history, setHistory] = useState([]);
+  const [currentFileName, setCurrentFileName] = useState(null);
 
   useEffect(() => {
     if (active) {
-      setText(active.content || "");
       if (displayRef.current) {
         displayRef.current.innerHTML = active.content || "";
-        Object.entries(active.styles || {}).forEach(([key, value]) => {
-          displayRef.current.style[key] = value;
-        });
+        applyStyles(active.styles || {});
       }
-      setHistory([]); // מאפס היסטוריה כאשר עוברים טאב
+      setText(active.content || "");
+      setHistory([]);
     }
   }, [activeId, active]);
 
-  const saveContent = () => {
+  const applyStyles = (styles) => {
     if (!displayRef.current) return;
+    Object.entries(styles).forEach(([key, value]) => {
+      displayRef.current.style[key] = value;
+    });
+  };
+
+  const saveContent = () => {
+    if (!displayRef.current || !active) return;
     const content = displayRef.current.innerHTML;
     setText(content);
-    if (active) {
-      updateText(activeId, { ...active, content });
-    }
+    updateText(activeId, { ...active, content });
   };
 
   const saveCurrentToHistory = () => {
     if (!displayRef.current) return;
     const content = displayRef.current.innerHTML;
-    setHistory((prev) => [content, ...prev.slice(0, 9)]); // שומר עד 10 גרסאות אחרונות
+    setHistory((prev) => [content, ...prev.slice(0, 9)]);
   };
 
   const saveToHistoryManually = () => {
-    if (!displayRef.current) return;
-    const content = displayRef.current.innerHTML;
-    setHistory((prev) => [content, ...prev.slice(0, 9)]);
+    saveCurrentToHistory();
     alert("הטקסט נשמר להיסטוריה!");
   };
 
   const handleKeyboardInput = (button) => {
     if (!displayRef.current) return;
-
-    saveCurrentToHistory(); // שמירה אוטומטית לפני כל פעולה
+    saveCurrentToHistory();
 
     if (button === "{bksp}") {
       document.execCommand("delete");
@@ -76,12 +77,8 @@ export default function Editor() {
     const text = startContainer.textContent;
     let index = startOffset;
 
-    while (index > 0 && text[index - 1] === " ") {
-      index--;
-    }
-    while (index > 0 && text[index - 1] !== " ") {
-      index--;
-    }
+    while (index > 0 && text[index - 1] === " ") index--;
+    while (index > 0 && text[index - 1] !== " ") index--;
 
     const newText = text.slice(0, index) + text.slice(startOffset);
     startContainer.textContent = newText;
@@ -119,7 +116,7 @@ export default function Editor() {
     const findChar = prompt("איזה תו להחליף?");
     const replaceWith = prompt("במה להחליף?");
     if (findChar && replaceWith && displayRef.current) {
-      saveCurrentToHistory(); // גם לפני החלפה
+      saveCurrentToHistory();
       const content = displayRef.current.innerHTML;
       const updated = content.split(findChar).join(replaceWith);
       displayRef.current.innerHTML = updated;
@@ -144,33 +141,140 @@ export default function Editor() {
     const [last, ...rest] = history;
     if (displayRef.current) {
       displayRef.current.innerHTML = last;
-      setText(last);
-      if (active) {
-        updateText(activeId, { ...active, content: last });
-      }
+      saveContent();
     }
     setHistory(rest);
   };
 
+  const saveToLocalStorage = () => {
+    if (!displayRef.current) return;
+    const fileName = prompt("הזן שם לקובץ לשמירה:");
+    if (fileName) {
+      const content = displayRef.current.innerHTML;
+      localStorage.setItem(`textEditor_${fileName}`, content);
+      setCurrentFileName(fileName);
+      alert(`הטקסט נשמר בהצלחה בשם "${fileName}"!`);
+    }
+  };
+
+  const loadFromLocalStorage = () => {
+    const fileName = prompt("הזן את שם הקובץ שברצונך לפתוח:");
+    if (fileName) {
+      const content = localStorage.getItem(`textEditor_${fileName}`);
+      if (content && displayRef.current) {
+        displayRef.current.innerHTML = content;
+        saveContent();
+        setCurrentFileName(fileName);
+        alert("הטקסט נטען בהצלחה!");
+      } else {
+        alert(`לא נמצא קובץ בשם "${fileName}"`);
+      }
+    }
+  };
+
+  const saveCurrentFile = () => {
+    if (!currentFileName) {
+      alert("אין קובץ פתוח. השתמש ב-'שמור בשם'.");
+      return;
+    }
+    const content = displayRef.current.innerHTML;
+    localStorage.setItem(`textEditor_${currentFileName}`, content);
+    alert(`הקובץ "${currentFileName}" נשמר!`);
+  };
+
+  const handleAddNewText = () => {
+    const newId = addText("טקסט חדש");
+    setActiveId(newId);
+  };
+
+  const handleCloseText = (id) => {
+    if (window.confirm("האם לשמור לפני סגירה?")) {
+      const text = texts.find((t) => t.id === id);
+      if (text) {
+        localStorage.setItem(`textEditor_${text.title}_${id}`, text.content);
+      }
+    }
+    removeText(id);
+  };
+
   return (
     <div className="editor-container">
+      <div className="texts-view" style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center" }}>
+        {texts.map((t) => (
+          <div
+            key={t.id}
+            className={`text-preview ${t.id === activeId ? "active" : ""}`}
+            style={{
+              background: t.id === activeId ? "#dbeafe" : "#f0f0f0",
+              padding: "10px",
+              borderRadius: "8px",
+              border: "1px solid #ccc",
+              width: "300px",
+              minHeight: "100px",
+              position: "relative",
+              cursor: "pointer",
+              overflowWrap: "break-word",
+              wordBreak: "break-word",
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              setActiveId(t.id);
+            }}
+          >
+            <div dangerouslySetInnerHTML={{ __html: t.content || "" }} />
+            <button
+              style={{ position: "absolute", top: "5px", left: "5px" }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCloseText(t.id);
+              }}
+            >
+              ❌
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ textAlign: "center", margin: "20px" }}>
+        <button onClick={handleAddNewText}>➕ הוסף טקסט חדש</button>
+      </div>
+
       <div className="main-editor">
         <div
           className="display-area"
           contentEditable
           suppressContentEditableWarning
           ref={displayRef}
+          dir="rtl"
+          style={{
+            direction: "rtl",
+            textAlign: "right",
+            minHeight: "300px",
+            border: "1px solid #ccc",
+            padding: "10px",
+            borderRadius: "8px",
+            overflowWrap: "break-word",
+            wordBreak: "break-word",
+            backgroundColor: "#ffffff"
+          }}
           onInput={saveContent}
         />
+
         <VirtualKeyboard onKeyPress={handleKeyboardInput} />
+
         <div className="extra-controls">
           <button onClick={findChar}>🔍 חיפוש תו</button>
           <button onClick={replaceChar}>🔁 החלפת תו</button>
           <button onClick={showHistory}>♻️ פעולות אחרונות</button>
           <button onClick={undoLastAction}>↩️ Undo</button>
           <button onClick={saveToHistoryManually}>💾 שמור להיסטוריה</button>
+          <button onClick={saveCurrentFile}>💾 שמור</button>
+          <button onClick={saveToLocalStorage}>💾 שמור בשם</button>
+          <button onClick={loadFromLocalStorage}>📂 פתח קובץ</button>
         </div>
       </div>
     </div>
   );
 }
+
+    

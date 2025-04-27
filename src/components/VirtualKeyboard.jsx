@@ -52,3 +52,5 @@ export default function VirtualKeyboard({ onKeyPress }) {
     </div>
   );
 }
+
+    
