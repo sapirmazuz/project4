@@ -25,7 +25,7 @@ function InnerApp() {
   return (
     <div className="app-container">
       <UserMenu />
-      <FileMenu />
+      {/* <FileMenu /> */}
       <Toolbar />
       {/* <Display /> */}
       <Editor />

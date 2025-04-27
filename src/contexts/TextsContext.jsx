@@ -1,42 +1,61 @@
-import React, { createContext, useState, useContext } from "react";
+import React, { createContext, useContext, useState } from "react";
+import { v4 as uuidv4 } from "uuid";
 
 const TextsContext = createContext();
 
+export function useTexts() {
+  return useContext(TextsContext);
+}
+
 export function TextsProvider({ children }) {
-  const [texts, setTexts] = useState([]);
-  const [activeId, setActiveId] = useState(null);
-  const [savedStyle, setSavedStyle] = useState(null);
+  const [texts, setTexts] = useState([
+    {
+      id: uuidv4(),
+      title: "טקסט ראשון",
+      content: "",
+      styles: {},
+    }
+  ]);
 
-  const addText = (title = "Untitled") => {
-    const id = Date.now().toString();
-    const newText = { id, title, content: "", styles: {} };
-    setTexts((prev) => [...prev, newText]);
-    setActiveId(id);
-  };
+  const [activeId, setActiveId] = useState(texts[0].id);
 
-  const updateText = (id, newContent) => {
+  const updateText = (id, updated) => {
     setTexts((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, content: newContent } : t))
+      prev.map((text) => (text.id === id ? { ...text, ...updated } : text))
     );
   };
 
+  const addText = (initialContent = "") => {
+    const newText = {
+      id: uuidv4(),
+      title: `טקסט ${texts.length + 1}`,
+      content: initialContent,
+      styles: {},
+    };
+    setTexts((prev) => [...prev, newText]);
+    setActiveId(newText.id); // 🆕 מעביר מיד לאקטיבי
+    return newText.id;
+  };
+
   const removeText = (id) => {
-    setTexts((prev) => prev.filter((t) => t.id !== id));
-    if (activeId === id) setActiveId(null);
+    setTexts((prev) => {
+      const updated = prev.filter((text) => text.id !== id);
+      if (id === activeId) {
+        if (updated.length > 0) {
+          setActiveId(updated[0].id);
+        } else {
+          setActiveId(null);
+        }
+      }
+      return updated;
+    });
   };
 
-  const value = {
-    texts,
-    activeId,
-    setActiveId,
-    addText,
-    updateText,
-    removeText,
-    savedStyle,
-    setSavedStyle,
-  };
-
-  return <TextsContext.Provider value={value}>{children}</TextsContext.Provider>;
+  return (
+    <TextsContext.Provider
+      value={{ texts, activeId, updateText, addText, setActiveId, removeText }}
+    >
+      {children}
+    </TextsContext.Provider>
+  );
 }
-
-export const useTexts = () => useContext(TextsContext);
