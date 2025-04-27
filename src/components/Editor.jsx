@@ -8,6 +8,7 @@ export default function Editor() {
   const displayRef = useRef(null);
   const [text, setText] = useState(active?.content || "");
   const [history, setHistory] = useState([]);
+  const [currentFileName, setCurrentFileName] = useState(null); // 🆕 שמירת שם קובץ נוכחי
 
   useEffect(() => {
     if (active) {
@@ -18,7 +19,7 @@ export default function Editor() {
           displayRef.current.style[key] = value;
         });
       }
-      setHistory([]); // מאפס היסטוריה כאשר עוברים טאב
+      setHistory([]);
     }
   }, [activeId, active]);
 
@@ -34,7 +35,7 @@ export default function Editor() {
   const saveCurrentToHistory = () => {
     if (!displayRef.current) return;
     const content = displayRef.current.innerHTML;
-    setHistory((prev) => [content, ...prev.slice(0, 9)]); // שומר עד 10 גרסאות אחרונות
+    setHistory((prev) => [content, ...prev.slice(0, 9)]);
   };
 
   const saveToHistoryManually = () => {
@@ -47,7 +48,7 @@ export default function Editor() {
   const handleKeyboardInput = (button) => {
     if (!displayRef.current) return;
 
-    saveCurrentToHistory(); // שמירה אוטומטית לפני כל פעולה
+    saveCurrentToHistory();
 
     if (button === "{bksp}") {
       document.execCommand("delete");
@@ -119,7 +120,7 @@ export default function Editor() {
     const findChar = prompt("איזה תו להחליף?");
     const replaceWith = prompt("במה להחליף?");
     if (findChar && replaceWith && displayRef.current) {
-      saveCurrentToHistory(); // גם לפני החלפה
+      saveCurrentToHistory();
       const content = displayRef.current.innerHTML;
       const updated = content.split(findChar).join(replaceWith);
       displayRef.current.innerHTML = updated;
@@ -152,6 +153,48 @@ export default function Editor() {
     setHistory(rest);
   };
 
+  // 🆕 שמירה בשם חדש (Save As)
+  const saveToLocalStorage = () => {
+    if (!displayRef.current) return;
+    const fileName = prompt("הזן שם לקובץ לשמירה:");
+    if (fileName) {
+      const content = displayRef.current.innerHTML;
+      localStorage.setItem(`textEditor_${fileName}`, content);
+      setCurrentFileName(fileName); // שומר את שם הקובץ
+      alert(`הטקסט נשמר בהצלחה בשם "${fileName}"!`);
+    }
+  };
+
+  // 🆕 פתיחת קובץ קיים
+  const loadFromLocalStorage = () => {
+    const fileName = prompt("הזן את שם הקובץ שברצונך לפתוח:");
+    if (fileName) {
+      const content = localStorage.getItem(`textEditor_${fileName}`);
+      if (content) {
+        if (displayRef.current) {
+          displayRef.current.innerHTML = content;
+          setCurrentFileName(fileName); // שם קובץ טעון
+          saveContent();
+          alert(`הטקסט נטען בהצלחה!`);
+        }
+      } else {
+        alert(`לא נמצא קובץ בשם "${fileName}"!`);
+      }
+    }
+  };
+
+  // 🆕 שמירה רגילה (אם יש קובץ פתוח)
+  const saveCurrentFile = () => {
+    if (!displayRef.current) return;
+    if (!currentFileName) {
+      alert("אין קובץ פתוח לשמירה. השתמש ב-'שמור בשם'.");
+      return;
+    }
+    const content = displayRef.current.innerHTML;
+    localStorage.setItem(`textEditor_${currentFileName}`, content);
+    alert(`הקובץ "${currentFileName}" עודכן בהצלחה!`);
+  };
+
   return (
     <div className="editor-container">
       <div className="main-editor">
@@ -169,6 +212,10 @@ export default function Editor() {
           <button onClick={showHistory}>♻️ פעולות אחרונות</button>
           <button onClick={undoLastAction}>↩️ Undo</button>
           <button onClick={saveToHistoryManually}>💾 שמור להיסטוריה</button>
+          {/* כפתורים של קבצים */}
+          <button onClick={saveCurrentFile}>💾 שמור</button>
+          <button onClick={saveToLocalStorage}>💾 שמור בשם</button>
+          <button onClick={loadFromLocalStorage}>📂 פתח קובץ</button>
         </div>
       </div>
     </div>
