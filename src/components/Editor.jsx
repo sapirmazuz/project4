@@ -199,64 +199,12 @@ export default function Editor() {
 
   return (
     <div className="editor-container">
-      <div className="texts-view" style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center" }}>
-        {texts.map((t) => (
-          <div
-            key={t.id}
-            className={`text-preview ${t.id === activeId ? "active" : ""}`}
-            style={{
-              background: t.id === activeId ? "#dbeafe" : "#f0f0f0",
-              padding: "10px",
-              borderRadius: "8px",
-              border: "1px solid #ccc",
-              width: "300px",
-              minHeight: "100px",
-              position: "relative",
-              cursor: "pointer",
-              overflowWrap: "break-word",
-              wordBreak: "break-word",
-            }}
-            onClick={(e) => {
-              e.preventDefault();
-              setActiveId(t.id);
-            }}
-          >
-            <div dangerouslySetInnerHTML={{ __html: t.content || "" }} />
-            <button
-              style={{ position: "absolute", top: "5px", left: "5px" }}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleCloseText(t.id);
-              }}
-            >
-              ❌
-            </button>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ textAlign: "center", margin: "20px" }}>
-        <button onClick={handleAddNewText}>➕ הוסף טקסט חדש</button>
-      </div>
-
       <div className="main-editor">
         <div
           className="display-area"
           contentEditable
           suppressContentEditableWarning
           ref={displayRef}
-          dir="rtl"
-          style={{
-            direction: "rtl",
-            textAlign: "right",
-            minHeight: "300px",
-            border: "1px solid #ccc",
-            padding: "10px",
-            borderRadius: "8px",
-            overflowWrap: "break-word",
-            wordBreak: "break-word",
-            backgroundColor: "#ffffff"
-          }}
           onInput={saveContent}
         />
 

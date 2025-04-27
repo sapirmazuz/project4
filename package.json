@@ -12,7 +12,8 @@
     "react-dom": "^18.2.0",
     "react-icons": "^5.5.0",
     "react-simple-keyboard": "^3.8.66",
-    "sweetalert2": "^11.19.1"
+    "sweetalert2": "^11.19.1",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "vite": "^5.0.0"
